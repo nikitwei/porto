@@ -1,0 +1,51 @@
+name: Deploy to Nuxt Hub
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Detect package manager
+        id: detect
+        run: |
+          if [ -f "pnpm-lock.yaml" ]; then
+            echo "manager=pnpm" >> $GITHUB_OUTPUT
+            echo "install=install" >> $GITHUB_OUTPUT
+          elif [ -f "yarn.lock" ]; then
+            echo "manager=yarn" >> $GITHUB_OUTPUT
+            echo "install=install" >> $GITHUB_OUTPUT
+          elif [ -f "package-lock.json" ]; then
+            echo "manager=npm" >> $GITHUB_OUTPUT
+            echo "install=ci" >> $GITHUB_OUTPUT
+          else
+            echo "Unknown package manager"; exit 1
+          fi
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: ${{ steps.detect.outputs.manager }}
+
+      - name: Install dependencies
+        run: ${{ steps.detect.outputs.manager }} ${{ steps.detect.outputs.install }}
+
+      - name: Build Nuxt 4
+        run: ${{ steps.detect.outputs.manager }} run build
+
+      - name: Upload Nuxt Output for Hub
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuxt-output
+          path: .output
