@@ -1,51 +1,48 @@
-name: Deploy to Nuxt Hub
+name: Deploy to NuxtHub
 
 on:
   push:
-    branches: ["main"]
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
-permissions:
-  contents: read
-  id-token: write
-
 jobs:
-  build:
+  deploy:
+    name: "Deploy to NuxtHub"
     runs-on: ubuntu-latest
 
+    # Set environment based on branch
+    environment:
+      name: ${{ github.ref == 'refs/heads/main' && 'production' || 'preview' }}
+      url: ${{ steps.deploy.outputs.deployment-url }}
+
+    permissions:
+      contents: read
+      id-token: write
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: Detect package manager
-        id: detect
-        run: |
-          if [ -f "pnpm-lock.yaml" ]; then
-            echo "manager=pnpm" >> $GITHUB_OUTPUT
-            echo "install=install" >> $GITHUB_OUTPUT
-          elif [ -f "yarn.lock" ]; then
-            echo "manager=yarn" >> $GITHUB_OUTPUT
-            echo "install=install" >> $GITHUB_OUTPUT
-          elif [ -f "package-lock.json" ]; then
-            echo "manager=npm" >> $GITHUB_OUTPUT
-            echo "install=ci" >> $GITHUB_OUTPUT
-          else
-            echo "Unknown package manager"; exit 1
-          fi
-
-      - name: Setup Node
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: ${{ steps.detect.outputs.manager }}
+          node-version: '20'
+          cache: 'npm'
 
       - name: Install dependencies
-        run: ${{ steps.detect.outputs.manager }} ${{ steps.detect.outputs.install }}
+        run: npm ci
 
-      - name: Build Nuxt 4
-        run: ${{ steps.detect.outputs.manager }} run build
-
-      - name: Upload Nuxt Output for Hub
-        uses: actions/upload-artifact@v4
+      - name: Build & Deploy to NuxtHub
+        uses: nuxt-hub/action@v2
+        id: deploy
         with:
-          name: nuxt-output
-          path: .output
+          project-key: ${{ secrets.NUXT_HUB_PROJECT_KEY }}
+
+      - name: Deployment Summary
+        run: |
+          echo "🚀 Deployment completed!"
+          echo "🌐 URL: ${{ steps.deploy.outputs.deployment-url }}"
