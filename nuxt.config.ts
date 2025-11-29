@@ -1,16 +1,21 @@
-// https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
     compatibilityDate: '2025-07-15',
-    devtools: {enabled: true},
-    modules: ['@nuxthub/core'],
-    hub: {
-        // Optional: Enable NuxtHub features
-        // database: true,  // Enable D1 database
-        // kv: true,        // Enable KV storage
-        // blob: true,      // Enable R2 blob storage
-        // cache: true,     // Enable cache
+    devtools: { enabled: true },
+
+    modules: ['@nuxtjs/tailwindcss', "@pinia/nuxt"],
+
+    future: {
+        compatibilityVersion: 4
     },
-    future : {
-        compatibilityVersion : 4
+
+    css: ['./app/assets/css/main.css'],
+
+    app: {
+        head: {
+            title: "Portfolio – Frontend Developer",
+            meta: [
+                { name: "description", content: "Frontend Developer Portfolio" }
+            ]
+        }
     }
 })
